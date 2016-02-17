@@ -502,7 +502,7 @@ oCanvas.domReady(function() {
 		if (tempScore < 10) {
 			tempScore = "0" + tempScore;
 		} else {
-			tempScore = tempScore;
+			// do nothing right now
 		}
 		scoreValueText.text = tempScore;
 	}

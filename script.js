@@ -19,11 +19,12 @@ var score = 0;
 var sequence = [];
 var playerSequence = [];
 var playerTurn = false;
+var gameOver = false;
 var strictMode = "off";
 var onOffStatus = "off";
 var defaultSpeed = 300; // in MS
 var speed = 2;          // multiplier
-var gameDelay = 1000;    // delay between sequence
+var gameDelay = 1000;   // delay between sequence
 var tempScore = 0;
 
 oCanvas.domReady(function() {
@@ -68,14 +69,14 @@ oCanvas.domReady(function() {
 	green.bind("click tap", function() {
 		if (onOffStatus == "on") {
 			guess = greenPush();
+			console.log("guess: ", guess);
 			getUserInput(guess);
 		}
 	});
 
 	function greenPush() {
 		green.stroke = "137px #aaffaa";
-		var v = document.getElementsByTagName("audio")[0];
-		v.play();
+		playSound(0);
 		console.log("green");
 		canvas.redraw();
 		setTimeout(function() {
@@ -105,14 +106,14 @@ oCanvas.domReady(function() {
 	red.bind("click tap", function() {
 		if (onOffStatus == "on") {
 			guess = redPush();
+			console.log("guess: ", guess);
 			getUserInput(guess);
 		}
 	});
 
 	function redPush() {
 		red.stroke = "137px #ffaaaa";
-		var v = document.getElementsByTagName("audio")[3];
-		v.play();
+		playSound(3);
 		console.log("red");
 		canvas.redraw();
 		setTimeout(function() {
@@ -142,14 +143,14 @@ oCanvas.domReady(function() {
 	blue.bind("click tap", function() {
 		if (onOffStatus == "on") {
 			guess = bluePush();
+			console.log("guess: ", guess);
 			getUserInput(guess);
 		}
 	});
 
 	function bluePush() {
 		blue.stroke = "137px #aaaaff";
-		var v = document.getElementsByTagName("audio")[2];
-		v.play();
+		playSound(2);
 		console.log("blue");
 		canvas.redraw();
 		setTimeout(function() {
@@ -179,14 +180,14 @@ oCanvas.domReady(function() {
 	yellow.bind("click tap", function() {
 		if (onOffStatus == "on") {
 			guess = yellowPush();
+			console.log("guess: ", guess);
 			getUserInput(guess);
 		}
 	});
 
 	function yellowPush() {
 		yellow.stroke = "137px #ffffaa";
-		var v = document.getElementsByTagName("audio")[1];
-		v.play();
+		playSound(1);
 		console.log("yellow");
 		canvas.redraw();
 		setTimeout(function() {
@@ -252,7 +253,7 @@ oCanvas.domReady(function() {
 		},
 		font: "30px Orbitron",
 		text: "00",	
-		fill: "#33f"
+		fill: "#333"
 	});
 		
 	canvas.addChild(scoreValueText);
@@ -512,46 +513,16 @@ oCanvas.domReady(function() {
 	/**
 	 * Run Game
 	 */
-	function gameStart() {
+	function gameLoop() {
 		if (onOffStatus === "on") {
+			
 			do {
-
-				// generate a random number between 1 and 4
-				rand = Math.floor((Math.random() * 4) + 1);
-
-				// Save the random number to the sequence array
-				sequence.push(rand);
-				console.log(sequence);
-
-				switch (rand) {
-					case 1: // Green
-						greenPush();
-						//green.unbind();
-						getUserInput();
-						playerTurn = false;
-						break;
-					case 2: // Red
-						redPush();
-						//red.unbind();
-						getUserInput();
-						playerTurn = false;
-						break;
-					case 3: // Blue
-						bluePush();
-						//blue.unbind();
-						getUserInput();
-						playerTurn = false;
-						break;
-					case 4: // Yellow
-						yellowPush();
-						//yellow.unbind();
-						getUserInput();
-						playerTurn = false;
-						break;
-				}
-				
-			} while (sequence.length < 20 && playerTurn);
-
+				console.log("here inside the gameLoop");
+				getNew();
+				playSequence();
+				getUserInput();
+			} while (gameOver === true && sequence.length < 20);
+			
 		} else {
 			console.log("Simon is powered off");
 		}
@@ -561,72 +532,64 @@ oCanvas.domReady(function() {
 	function getUserInput(guess) {
 
 		var check = 0;
-		if (guess != null ) {
-		
-			do {
-					if (guess == sequence[check]) {
-						console.log("you got it!");
-						score++;
-						updateScore(score);
-						setTimeout(function() {
-							getNew();
-							playSequence();
-						}, gameDelay);
-					} 
-					else if (strictMode === "on") 
-					{
-						console.log("You lose!");
-					} 
-					else 
-					{
-						playSequence();
-					}
-				check++;;
-			} while (check < sequence.length);
-		}
+			
+			while (check < sequence.length && gameOver === false && guess != null) {
+				
+				console.log("inside while inside getUserInput");
+				if (guess !== sequence[check] && strictMode == "on") {
+					gameOver = true;
+					console.log('game over');
+				} else if (guess !== sequence[check] && strictMode == "off") {
+					console.log('repeat sequence');
+					guess = null;
+					playSequence();
+				} else if (guess === sequence[check]) {
+					console.log("you guessed "+ sequence[check] + " correct");
+					check++;
+				} else {
+					gameLoop();
+				}
+			}
 	}
 
 	
 	function playSequence() {
+		var i = 0;
+		var	pulse = setInterval(function() {
+				sequencePush(sequence[i]);
+			i++;
+			
+			if (i >= sequence.length) {
+				clearInterval(pulse);
+			}
+		}, 1000);
 		
-		for (var x = 0; x < sequence.length; x++) {
-			console.log(sequence.length);
-			console.log(sequence);
-			switch (sequence[x]) {
-					case 1: // Green
-						setTimeout(function() {
-							console.log("replay green ...");
-							greenPush();
-						}, 2000);
-						break;
-					case 2: // Red
-						setTimeout(function() {
-							console.log("replay red ...");
-							redPush();
-						}, 2000);
-						break;
-					case 3: // Blue
-						setTimeout(function() {
-							console.log("replay blue ...");
-							bluePush();
-						}, 2000);
-						break;
-					case 4: // Yellow
-						setTimeout(function() {
-							console.log("replay yellow ...");
-							yellowPush();		
-						}, 2000);
-						break;
-				}
-		}
+	}
+	
+	function sequencePush(incoming) {
+		console.log("sequencePush: ", incoming);
+		if (incoming == 1) {
+				greenPush();
+			} else if (incoming == 2) {
+				redPush();
+			} else if (incoming == 3) {
+				bluePush();
+			} else if (incoming == 4) {
+				yellowPush();		
+			}
+	}
+	
+	function playSound(note) {
+		var v = document.getElementsByTagName("audio")[note];
+		v.play();
 	}
 	
 	function getNew() {
 		// generate a random number between 1 and 4
 		rand = Math.floor((Math.random() * 4) + 1);
 		// Save the random number to the sequence array
-		sequence.push(rand);
-		console.log(sequence);
+		//sequence.push(rand);
+		sequence = [3, 4, 2, 1, 4, 2];
 	}
 	
 	function resetGame() {
@@ -634,7 +597,7 @@ oCanvas.domReady(function() {
 		sequence = [];
 		score = 0;
 		scoreValueText.text = "00";
-		gameStart();
+		gameLoop();
 
 	}
 

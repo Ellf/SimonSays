@@ -26,6 +26,7 @@ var defaultSpeed = 300; // in MS
 var speed = 2;          // multiplier
 var gameDelay = 1000;   // delay between sequence
 var tempScore = 0;
+var guess = [];
 
 oCanvas.domReady(function() {
 	var canvas = oCanvas.create({
@@ -68,7 +69,7 @@ oCanvas.domReady(function() {
 	 */
 	green.bind("click tap", function() {
 		if (onOffStatus == "on") {
-			guess = greenPush();
+			guess.push(greenPush());
 			console.log("guess: ", guess);
 			getUserInput(guess);
 		}
@@ -105,7 +106,7 @@ oCanvas.domReady(function() {
 	 */
 	red.bind("click tap", function() {
 		if (onOffStatus == "on") {
-			guess = redPush();
+			guess.push(redPush());
 			console.log("guess: ", guess);
 			getUserInput(guess);
 		}
@@ -142,7 +143,7 @@ oCanvas.domReady(function() {
 	 */
 	blue.bind("click tap", function() {
 		if (onOffStatus == "on") {
-			guess = bluePush();
+			guess.push(bluePush());
 			console.log("guess: ", guess);
 			getUserInput(guess);
 		}
@@ -179,7 +180,7 @@ oCanvas.domReady(function() {
 	 */
 	yellow.bind("click tap", function() {
 		if (onOffStatus == "on") {
-			guess = yellowPush();
+			guess.push(yellowPush());
 			console.log("guess: ", guess);
 			getUserInput(guess);
 		}
@@ -515,14 +516,13 @@ oCanvas.domReady(function() {
 	 */
 	function gameLoop() {
 		if (onOffStatus === "on") {
-			
+
 			do {
-				console.log("here inside the gameLoop");
 				getNew();
 				playSequence();
-				getUserInput();
-			} while (gameOver === true && sequence.length < 20);
-			
+				getUserInput(guess);
+			} while (gameOver === false && sequence.length < 20 && guess != 0);
+
 		} else {
 			console.log("Simon is powered off");
 		}
@@ -533,21 +533,25 @@ oCanvas.domReady(function() {
 
 		var check = 0;
 			
-			while (check < sequence.length && gameOver === false && guess != null) {
-				
-				console.log("inside while inside getUserInput");
-				if (guess !== sequence[check] && strictMode == "on") {
+			while (check < sequence.length && gameOver === false && guess.length != 0) {
+
+				if (guess[0] !== sequence[check] && strictMode == "on") {
 					gameOver = true;
 					console.log('game over');
-				} else if (guess !== sequence[check] && strictMode == "off") {
+				} else if (guess[0] !== sequence[check] && strictMode == "off") {
 					console.log('repeat sequence');
-					guess = null;
+					guess.length = 0;
 					playSequence();
-				} else if (guess === sequence[check]) {
-					console.log("you guessed "+ sequence[check] + " correct");
-					check++;
 				} else {
-					gameLoop();
+
+					for (var x = 0; x < sequence.length; x++) {
+						//test for each array element
+						if (guess === sequence) {
+							guess.length = 0;
+
+						}
+					}
+
 				}
 			}
 	}
@@ -588,8 +592,8 @@ oCanvas.domReady(function() {
 		// generate a random number between 1 and 4
 		rand = Math.floor((Math.random() * 4) + 1);
 		// Save the random number to the sequence array
-		//sequence.push(rand);
-		sequence = [3, 4, 2, 1, 4, 2];
+		sequence.push(rand);
+		//sequence = [3, 4, 2, 1, 4, 2];
 	}
 	
 	function resetGame() {

@@ -17,7 +17,7 @@ console.clear();
  */
 var score = 0;
 var sequence = [];
-var gameOver = true;
+var gameOver = false;
 var strictMode = "off";
 var onOffStatus = "off";
 var defaultSpeed = 300; // in MS
@@ -27,6 +27,7 @@ var doneFlag = false;
 var winCondition = 20;
 var sequencePause = 1000;
 var timeout;
+var errorSound;
 
 oCanvas.domReady(function() {
 	var canvas = oCanvas.create({
@@ -68,7 +69,8 @@ oCanvas.domReady(function() {
 	 * Detect Green Button click
 	 */
 	green.bind("click tap", function() {
-		if (onOffStatus == "on") {
+		console.log(gameOver);
+		if (onOffStatus == "on" && gameOver != true) {
 			clearTimeout(timeout);
 			guess.push(greenPush());
 			getUserInput();
@@ -105,7 +107,7 @@ oCanvas.domReady(function() {
 	 * Detect Red Button click
 	 */
 	red.bind("click tap", function() {
-		if (onOffStatus == "on") {
+		if (onOffStatus == "on" && gameOver != true) {
 			clearTimeout(timeout);
 			guess.push(redPush());
 			getUserInput();
@@ -142,7 +144,7 @@ oCanvas.domReady(function() {
 	 * Detect Blue Button click
 	 */
 	blue.bind("click tap", function() {
-		if (onOffStatus == "on") {
+		if (onOffStatus == "on" && gameOver != true) {
 			clearTimeout(timeout);
 			guess.push(bluePush());
 			getUserInput();
@@ -179,7 +181,7 @@ oCanvas.domReady(function() {
 	 * Detect Yellow Button click
 	 */
 	yellow.bind("click tap", function() {
-		if (onOffStatus == "on") {
+		if (onOffStatus == "on" && gameOver != true) {
 			clearTimeout(timeout);
 			guess.push(yellowPush());
 			getUserInput();
@@ -246,10 +248,10 @@ oCanvas.domReady(function() {
 	
 	// Score value text
 	var scoreValueText = canvas.display.text({
-		x: 260,
+		x: 235,
 		y: 328,
 		origin: {
-			x: "center",
+			x: "left",
 			y: "middle"
 		},
 		font: "30px Orbitron",
@@ -258,7 +260,7 @@ oCanvas.domReady(function() {
 	});
 		
 	canvas.addChild(scoreValueText);
-	canvas.redraw();
+	//canvas.redraw();
 
 	// Write the score value
 	updateScore(score);
@@ -267,7 +269,7 @@ oCanvas.domReady(function() {
 	 * On/Off Label
 	 */
 	var onOffText = canvas.display.text({
-		x: 190,
+		x: 188,
 		y: 280,
 		origin: {
 			x: "center",
@@ -324,7 +326,7 @@ oCanvas.domReady(function() {
 	 * Strict Mode Label
 	 */
 	var strictText = canvas.display.text({
-		x: 260,
+		x: 255,
 		y: 280,
 		origin: {
 			x: "center",
@@ -376,7 +378,7 @@ oCanvas.domReady(function() {
 	modeButton.bind("click tap", function() {
 
 		// prevent button from working unless turned on.
-		if (gameOver === true) {
+		if (gameOver != true) {
 			// Stop any previous running animation
 			this.stop();
 			console.log("Strict Toggle");
@@ -402,7 +404,7 @@ oCanvas.domReady(function() {
 	 * Reset Label
 	 */
 	var resetText = canvas.display.text({
-		x: 330,
+		x: 325,
 		y: 280,
 		origin: {
 			x: "center",
@@ -468,7 +470,7 @@ oCanvas.domReady(function() {
 
 	// Simon Name display
 	var simonText = canvas.display.text({
-		x: 260,
+		x: 240,
 		y: 190,
 		origin: {
 			x: "center",
@@ -483,7 +485,7 @@ oCanvas.domReady(function() {
 
 	// Score Label
 	var scoreText = canvas.display.text({
-		x: 260,
+		x: 245,
 		y: 305,
 		origin: {
 			x: "center",
@@ -514,16 +516,22 @@ oCanvas.domReady(function() {
 	 * Run Game
 	 */
 	function gameLoop() {
-		if (onOffStatus === "on") {
-
-			do {
-				getNew();
-				playSequence();
-			} while (gameOver === false && sequence.length < winCondition && guess.length != 0);
+		if (onOffStatus === "on"  && gameOver != true) {
 
 			if (sequence.length >= winCondition) {
 				console.log("win");
+				scoreValueText.text = ":-)";
+				gameOver = true;
 			}
+
+
+			do {
+				if (gameOver != true) {
+					getNew();
+					playSequence();
+				}
+			} while (gameOver != true && sequence.length <= winCondition && guess.length != 0);
+
 
 		} else {
 			console.log("Simon is powered off");
@@ -544,11 +552,21 @@ oCanvas.domReady(function() {
 				} while (x < sequence.length);
 			} else	if (guess[x] !== sequence[x] && strictMode === "on" && guess[x] !== undefined){
 				console.log("Game Over");
+				scoreValueText.text = "XX";
+				errorSound = setTimeout(function() {
+					playSound(4);
+				}, 700);
 				gameOver = true;
 			}
 
 			// Mistake non strict mode - replay sequence
 			if (guess[x] !== sequence[x] && strictMode === "off" && guess.length != 0) {
+				var oldTextValue = scoreValueText.text;
+				scoreValueText.text = "ER";
+				errorSound = setTimeout(function() {
+					playSound(4);
+					scoreValueText.text = oldTextValue;
+				}, 700);
 				guess.length = 0;
 				playSequence();
 			}
@@ -626,12 +644,9 @@ oCanvas.domReady(function() {
 		guess = [];
 		score = 0;
 		scoreValueText.text = "00";
+		gameOver = false;
 		gameLoop();
 
 	}
-
-
-
-
 
 });

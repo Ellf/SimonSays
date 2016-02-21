@@ -17,16 +17,16 @@ console.clear();
  */
 var score = 0;
 var sequence = [];
-var playerSequence = [];
-var playerTurn = false;
-var gameOver = false;
+var gameOver = true;
 var strictMode = "off";
 var onOffStatus = "off";
 var defaultSpeed = 300; // in MS
 var speed = 2;          // multiplier
-var gameDelay = 1000;   // delay between sequence
-var tempScore = 0;
 var guess = [];
+var doneFlag = false;
+var winCondition = 20;
+var sequencePause = 1000;
+var timeout;
 
 oCanvas.domReady(function() {
 	var canvas = oCanvas.create({
@@ -69,9 +69,9 @@ oCanvas.domReady(function() {
 	 */
 	green.bind("click tap", function() {
 		if (onOffStatus == "on") {
+			clearTimeout(timeout);
 			guess.push(greenPush());
-			console.log("guess: ", guess);
-			getUserInput(guess);
+			getUserInput();
 		}
 	});
 
@@ -106,9 +106,9 @@ oCanvas.domReady(function() {
 	 */
 	red.bind("click tap", function() {
 		if (onOffStatus == "on") {
+			clearTimeout(timeout);
 			guess.push(redPush());
-			console.log("guess: ", guess);
-			getUserInput(guess);
+			getUserInput();
 		}
 	});
 
@@ -143,9 +143,9 @@ oCanvas.domReady(function() {
 	 */
 	blue.bind("click tap", function() {
 		if (onOffStatus == "on") {
+			clearTimeout(timeout);
 			guess.push(bluePush());
-			console.log("guess: ", guess);
-			getUserInput(guess);
+			getUserInput();
 		}
 	});
 
@@ -180,9 +180,9 @@ oCanvas.domReady(function() {
 	 */
 	yellow.bind("click tap", function() {
 		if (onOffStatus == "on") {
+			clearTimeout(timeout);
 			guess.push(yellowPush());
-			console.log("guess: ", guess);
-			getUserInput(guess);
+			getUserInput();
 		}
 	});
 
@@ -309,7 +309,6 @@ oCanvas.domReady(function() {
 	 * Detect On or Off Click
 	 */
 	onOffButton.bind("click tap", function() {
-		//updateScore(score);
 		this.radius = 15;
 		this.fill = "#radial-gradient(center, center, #e07272 0%, #ce2b2b 57%, #6d0019 100%)";
 		onOffStatus = onOffStatus === "on" ? "off" : "on";
@@ -377,7 +376,7 @@ oCanvas.domReady(function() {
 	modeButton.bind("click tap", function() {
 
 		// prevent button from working unless turned on.
-		if (onOffStatus == "on") {
+		if (gameOver === true) {
 			// Stop any previous running animation
 			this.stop();
 			console.log("Strict Toggle");
@@ -520,8 +519,11 @@ oCanvas.domReady(function() {
 			do {
 				getNew();
 				playSequence();
-				getUserInput(guess);
-			} while (gameOver === false && sequence.length < 20 && guess != 0);
+			} while (gameOver === false && sequence.length < winCondition && guess.length != 0);
+
+			if (sequence.length >= winCondition) {
+				console.log("win");
+			}
 
 		} else {
 			console.log("Simon is powered off");
@@ -529,35 +531,55 @@ oCanvas.domReady(function() {
 
 	}
 
-	function getUserInput(guess) {
+	function getUserInput() {
 
-		var check = 0;
-			
-			while (check < sequence.length && gameOver === false && guess.length != 0) {
+		var x = 0;
 
-				if (guess[0] !== sequence[check] && strictMode == "on") {
-					gameOver = true;
-					console.log('game over');
-				} else if (guess[0] !== sequence[check] && strictMode == "off") {
-					console.log('repeat sequence');
-					guess.length = 0;
-					playSequence();
-				} else {
-
-					for (var x = 0; x < sequence.length; x++) {
-						//test for each array element
-						if (guess === sequence) {
-							guess.length = 0;
-
-						}
+			if (guess[x] === sequence[x] && sequence.length >= guess.length && guess[x] !== undefined) {
+				do {
+					x++;
+					if (sequence.length === guess.length) {
+						doneFlag = true;
 					}
-
-				}
+				} while (x < sequence.length);
+			} else	if (guess[x] !== sequence[x] && strictMode === "on" && guess[x] !== undefined){
+				console.log("Game Over");
+				gameOver = true;
 			}
+
+			// Mistake non strict mode - replay sequence
+			if (guess[x] !== sequence[x] && strictMode === "off" && guess.length != 0) {
+				guess.length = 0;
+				playSequence();
+			}
+
+			// Successfully completed the sequence
+			if (doneFlag === true) {
+				guess.length = 0;
+				doneFlag = false;
+				score++;
+				updateScore(score);
+				gameLoop();
+			}
+
 	}
 
-	
+/*
+	function tooSlow() {
+		if (strictMode == "on") {
+			gameOver = true;
+			console.log("Game Over");
+		} else if (onOffStatus !== "off") {
+			console.log("Too Slow");
+			guess.length = 0;
+			playSequence();
+		}
+	}
+*/
 	function playSequence() {
+		console.log("=============");
+		console.log("Play Sequence");
+		console.log("=============");
 		var i = 0;
 		var	pulse = setInterval(function() {
 				sequencePush(sequence[i]);
@@ -565,13 +587,14 @@ oCanvas.domReady(function() {
 			
 			if (i >= sequence.length) {
 				clearInterval(pulse);
+				console.log("=============");
+				console.log("Player Guess ");
+				console.log("=============");
 			}
-		}, 1000);
-		
+		}, sequencePause);
 	}
 	
 	function sequencePush(incoming) {
-		console.log("sequencePush: ", incoming);
 		if (incoming == 1) {
 				greenPush();
 			} else if (incoming == 2) {
@@ -598,11 +621,17 @@ oCanvas.domReady(function() {
 	
 	function resetGame() {
 
+		console.clear();
 		sequence = [];
+		guess = [];
 		score = 0;
 		scoreValueText.text = "00";
 		gameLoop();
 
 	}
+
+
+
+
 
 });
